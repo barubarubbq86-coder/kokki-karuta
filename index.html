@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ff7a00">
+<meta name="description" content="国旗カルタを音声で読み上げる、子ども向けのオフライン対応アプリ">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>国旗カルタ よみあげ・ワード追加版</title>
+<style>
+:root{
+  --bg:#fff7d6;--card:#fff;--ink:#1f2937;--muted:#64748b;
+  --orange:#ff7a00;--blue:#2563eb;--green:#16a34a;--red:#dc2626;
+  --purple:#7c3aed;--line:#e5e7eb;--soft:#f8fafc;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:linear-gradient(160deg,#fff7d6,#eaf7ff);
+  color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans JP","Yu Gothic",sans-serif;
+}
+main{width:min(900px,100%);margin:0 auto;padding:16px;display:flex;flex-direction:column}
+main>h1,main>.sub{order:0}
+main>section:nth-of-type(1){order:1}
+main>section:nth-of-type(5){order:2}
+main>section:nth-of-type(4){order:3}
+main>section:nth-of-type(2){order:4}
+main>section:nth-of-type(3){order:5}
+main>section:nth-of-type(6){order:6}
+h1{font-size:clamp(28px,6vw,44px);text-align:center;margin:8px 0 4px}
+.sub{text-align:center;font-size:16px;font-weight:700;margin:0 0 14px}
+.card{
+  background:rgba(255,255,255,.97);border-radius:22px;padding:16px;margin:14px 0;
+  box-shadow:0 8px 24px rgba(0,0,0,.10);
+}
+.photo{width:100%;display:block;border-radius:16px;border:1px solid var(--line)}
+.status{
+  min-height:76px;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:24px;font-weight:900;line-height:1.5;
+}
+.pills{text-align:center;margin:4px 0 8px}
+.pill{
+  display:inline-block;background:#eef2ff;color:#3730a3;border-radius:999px;
+  padding:6px 11px;margin:3px;font-weight:800;font-size:14px;
+}
+.currentInfo{text-align:center;font-size:17px;min-height:28px;margin:8px 0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{
+  border:0;border-radius:16px;padding:15px 10px;font-size:19px;font-weight:900;cursor:pointer;
+  touch-action:manipulation;
+}
+button:active{transform:translateY(2px)}
+#speakNext{grid-column:1/-1;background:var(--orange);color:#fff;font-size:28px}
+#takeCurrent{background:var(--green);color:#fff}
+#skipCurrent{background:#f59e0b;color:#fff}
+#autoBtn{background:var(--blue);color:#fff}
+#stopBtn{background:var(--red);color:#fff}
+#resetBtn{background:#6b7280;color:#fff}
+.sectionTitle{font-size:23px;font-weight:900;margin:0 0 10px}
+.helper{font-size:14px;line-height:1.6;color:var(--muted)}
+
+.addRow{display:grid;grid-template-columns:1fr auto;gap:8px}
+#wordInput{
+  width:100%;border:2px solid #cbd5e1;border-radius:15px;padding:14px 12px;
+  font-size:19px;outline:none;
+}
+#wordInput:focus{border-color:var(--blue)}
+#addWordBtn{background:var(--purple);color:#fff;min-width:96px}
+#bulkHint{margin-top:7px}
+.listTop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0 8px}
+#clearCustomBtn{background:#fee2e2;color:#991b1b;padding:10px 12px;font-size:15px}
+.wordList{display:grid;gap:8px}
+.presetWordToolbar{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  margin:10px 0;flex-wrap:wrap;
+}
+#restorePresetBtn{
+  background:#e0f2fe;color:#075985;padding:10px 12px;font-size:15px;
+}
+#deleteAllPresetBtn{
+  background:#fee2e2;color:#991b1b;padding:10px 12px;font-size:15px;
+}
+.presetWordList{display:grid;gap:8px}
+.presetWordItem{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;
+  align-items:center;background:#f8fafc;border:1px solid var(--line);
+  border-radius:14px;padding:10px 11px;
+}
+.presetWordItem.deleted{
+  opacity:.62;background:#f1f5f9;border-style:dashed;
+}
+.presetWordMain{min-width:0}
+.presetWordText{font-size:18px;font-weight:900;overflow-wrap:anywhere}
+.presetWordMeta{margin-top:2px;font-size:12px;color:var(--muted);font-weight:700}
+.presetDeleteBtn{
+  background:#fee2e2;color:#991b1b;padding:10px 12px;font-size:15px;border-radius:12px;
+}
+.presetRestoreBtn{
+  background:#dcfce7;color:#166534;padding:10px 12px;font-size:15px;border-radius:12px;
+}
+
+.wordItem{
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center;
+  background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:10px;
+}
+.wordItem.taken{background:#dcfce7;border-color:#86efac}
+.wordText{font-size:18px;font-weight:900;overflow-wrap:anywhere}
+.smallBtn{padding:10px 11px;font-size:15px;border-radius:12px}
+.takeBtn{background:#dcfce7;color:#166534}
+.deleteBtn{background:#fee2e2;color:#991b1b}
+.empty{text-align:center;padding:16px;color:var(--muted);font-weight:700}
+
+details summary{
+  cursor:pointer;font-size:22px;font-weight:900;list-style:none;
+}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:" ▼";font-size:15px;color:var(--muted)}
+details[open] summary::after{content:" ▲"}
+.settingsGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.field label{display:block;font-weight:900;margin-bottom:5px}
+.field select,.field input[type=range]{
+  width:100%;font-size:17px;
+}
+#voiceSelect{
+  width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:11px;background:#fff;
+}
+.presetRow{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
+.presetRow button{font-size:15px;padding:10px 5px;background:#eef2ff;color:#3730a3}
+.testRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+#voiceTest{background:var(--purple);color:#fff}
+#reloadVoices{background:#e2e8f0;color:#334155}
+.toggleLine{display:flex;align-items:center;gap:9px;margin:12px 0;font-weight:800}
+.toggleLine input{width:22px;height:22px}
+.voiceStatus{font-size:13px;color:var(--muted);padding:8px 10px;border-radius:10px;background:#f8fafc}
+.countryGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}
+.countryCard{background:#fafafa;border:1px solid var(--line);border-radius:15px;padding:11px}
+.countryCard.taken{background:#dcfce7;border-color:#86efac}
+.countryName{font-size:18px;font-weight:900}
+.fakeList{font-size:13px;color:#475569;line-height:1.5;margin:5px 0 8px}
+.countryCard button{width:100%;font-size:16px;padding:10px;background:#e2e8f0;color:#334155}
+.notice{
+  padding:12px;border-radius:14px;background:#ecfdf5;border:1px solid #a7f3d0;
+  font-size:14px;line-height:1.65;color:#14532d;
+}
+@media(max-width:560px){
+  .settingsGrid{grid-template-columns:1fr}
+  .presetRow{grid-template-columns:1fr 1fr}
+  .wordItem{grid-template-columns:1fr auto}
+  .wordItem .deleteBtn{grid-column:2}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>🏳️ 国旗カルタ よみあげ</h1>
+  <p class="sub">取った札は読まれない・自分のワードも追加できる！</p>
+
+  <section class="card">
+    <div id="status" class="status">「つぎをよむ」を押してね！</div>
+    <div class="pills">
+      <span class="pill">のこり国旗: <span id="remainingCountries">0</span></span>
+      <span class="pill">自分のワード: <span id="activeCustom">0</span></span>
+      <span class="pill">のこり読み札: <span id="remainingWords">0</span></span>
+    </div>
+    <div id="currentInfo" class="currentInfo">まだ読んでいません</div>
+    <div class="grid2">
+      <button id="speakNext">🔊 つぎをよむ</button>
+      <button id="takeCurrent">✅ いまの札を取った</button>
+      <button id="skipCurrent">⏭ とばす</button>
+      <button id="autoBtn">▶ 自動よみあげ</button>
+      <button id="stopBtn">■ とめる</button>
+      <button id="resetBtn">🔄 取った札をリセット</button>
+    </div>
+    <p class="helper">国旗の札を取ると、その国名と対応する「にたワード」もまとめて読み上げ対象から外れます。自分で追加したワードは1語ずつ管理します。</p>
+  </section>
+
+  <section class="card">
+    <div class="sectionTitle">➕ 自分の読み上げワード</div>
+    <div class="addRow">
+      <input id="wordInput" maxlength="500" autocomplete="off" placeholder="例：セントバーナード">
+      <button id="addWordBtn">追加</button>
+    </div>
+    <div id="bulkHint" class="helper">1語ずつでも、改行・「、」・カンマ区切りでまとめて追加してもOK。1語40文字まで、最大200語です。</div>
+
+    <div class="listTop">
+      <strong>ワードリスト（<span id="customCount">0</span>）</strong>
+      <button id="clearCustomBtn">自分のワードを全部削除</button>
+    </div>
+    <div id="customList" class="wordList"></div>
+  </section>
+
+  <section class="card">
+    <div class="sectionTitle">📚 プリセットの読み上げワード</div>
+    <details id="presetDetails">
+      <summary>プリセット一覧をひらく・とじる</summary>
+    <p class="helper">
+      最初から入っている国名と「にたワード」を1個ずつ削除できます。
+      削除したワードは読み上げ候補から外れ、「もどす」で復活できます。
+    </p>
+    <div class="presetWordToolbar">
+      <strong>使用中 <span id="activePresetCount">0</span> / 全 <span id="presetCount">0</span></strong>
+      <button id="deleteAllPresetBtn">プリセットを全部消す</button>
+      <button id="restorePresetBtn">削除したワードを全部もどす</button>
+    </div>
+    <div id="presetWordList" class="presetWordList"></div>
+    </details>
+  </section>
+
+  <section class="card">
+    <details open>
+      <summary>🎙️ よみあげの声をえらぶ</summary>
+
+      <div class="toggleLine">
+        <input id="localOnly" type="checkbox" checked>
+        <label for="localOnly">端末内の音声だけを表示（おすすめ）</label>
+      </div>
+
+      <div class="field">
+        <label for="voiceSelect">音声ベース</label>
+        <select id="voiceSelect"></select>
+      </div>
+
+      <div class="presetRow">
+        <button data-preset="low">低め</button>
+        <button data-preset="normal">標準</button>
+        <button data-preset="high">高め</button>
+      </div>
+
+      <div class="settingsGrid">
+        <div class="field">
+          <label>声の高さ：<span id="pitchValue">1.00</span></label>
+          <input id="pitch" type="range" min="0.50" max="2.00" step="0.05" value="1.00">
+        </div>
+        <div class="field">
+          <label>速さ：<span id="rateValue">1.00</span></label>
+          <input id="rate" type="range" min="0.50" max="2.00" step="0.05" value="1.00">
+        </div>
+        <div class="field">
+          <label>音量：<span id="volumeValue">1.00</span>（最大がおすすめ）</label>
+          <input id="volume" type="range" min="0.10" max="1.00" step="0.05" value="1.00">
+        </div>
+        <div class="field">
+          <label for="intervalSelect">自動よみあげ間隔</label>
+          <select id="intervalSelect">
+            <option value="2500">2.5秒</option>
+            <option value="3500">3.5秒</option>
+            <option value="5000" selected>5秒</option>
+            <option value="7000">7秒</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="testRow">
+        <button id="voiceTest">🔊 声をためす</button>
+        <button id="reloadVoices">↻ 音声一覧を更新</button>
+      </div>
+      <div id="voiceStatus" class="voiceStatus">音声を確認中…</div>
+      <p class="helper">端末やChromeに入っている音声によって、選べる声の数は変わります。</p>
+    </details>
+  </section>
+
+  <section class="card">
+    <div class="sectionTitle">🏁 国旗札の管理</div>
+    <div id="countryGrid" class="countryGrid"></div>
+  </section>
+
+  <section class="card">
+    <div class="notice">
+      <strong>安全性について：</strong>
+      このHTMLは外部サイト・広告・外部ライブラリへ接続する処理を入れていません。
+      カメラ、マイク、位置情報も使いません。追加したワードや設定は、このブラウザ内の保存領域（localStorage）にだけ保存します。
+      音声はChromeの読み上げ機能を使います。「端末内の音声だけ」をONにしておけば、アプリ側ではネット音声を選択しません。
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+const COUNTRY_NAMES = [
+  "アイスランド","アイルランド","アメリカ合衆国","アラブ首長国連邦","アルジェリア",
+  "アルゼンチン","イギリス","イスラエル","イタリア","インド","インドネシア","ウガンダ",
+  "ウクライナ","ウルグアイ","エクアドル","エジプト","エチオピア","エリトリア","オーストラリア",
+  "オーストリア","オランダ","ガーナ","カザフスタン","カタール","カナダ","カメルーン","韓国",
+  "カンボジア","ギニア","キューバ","ギリシャ","キリバス","クウェート","クロアチア","ケニア",
+  "コスタリカ","コロンビア","サウジアラビア","シンガポール","ジンバブエ","スイス","スウェーデン",
+  "スペイン","スリランカ","セネガル","セルビア","タイ","台湾","タンザニア","チェコ","中国",
+  "チュニジア","チリ","デンマーク","ドイツ","トルコ","ナイジェリア","ナミビア","日本","ニュージーランド",
+  "ネパール","ノルウェー","パキスタン","パナマ","パプアニューギニア","パラグアイ","パラオ","ハンガリー",
+  "バングラデシュ","フィジー","フィリピン","フィンランド","ブータン","ブラジル","フランス","ブルガリア",
+  "ブルネイ","ベトナム","ベネズエラ","ベラルーシ","ベルギー","ペルー","ポーランド","ポルトガル",
+  "マレーシア","南アフリカ共和国","ミャンマー","メキシコ","モナコ","モルディブ","モンゴル","ラオス",
+  "ラトビア","リトアニア","ルーマニア","ルクセンブルク","レソト","ロシア","北朝鮮","北マケドニア"
+];
+
+const SPECIAL_FAKES = {
+  "アイスランド":["アイスクリーム"],
+  "アイルランド":["アイルー"],
+  "アメリカ合衆国":["アメ玉"],
+  "アラブ首長国連邦":["アラビアータ","アラーム"],
+  "アルジェリア":["アルジェントソーマ"],
+  "アルゼンチン":["アルミ缶"],
+  "イギリス":["イグアナ"],
+  "イスラエル":["イス","イースター"],
+  "イタリア":["イタチ"],
+  "インド":["インコ"],
+  "インドネシア":["インド象"],
+  "ウガンダ":["うがい"],
+  "ウクライナ":["ウクレレ"],
+  "ウルグアイ":["うるう年"],
+  "エクアドル":["エクレア"],
+  "エジプト":["エジソン"],
+  "エチオピア":["エチケット"],
+  "エリトリア":["エリマキトカゲ"],
+  "オーストラリア":["オーストリッチ"],
+  "オーストリア":["オイスターソース"],
+  "オランダ":["オルゴール"],
+  "ガーナ":["ガーリック"],
+  "カザフスタン":["カスタネット"],
+  "カタール":["カタカナ"],
+  "カナダ":["カナブン"],
+  "カメルーン":["カメラ"],
+  "韓国":["カンガルー"],
+  "カンボジア":["かまぼこ"],
+  "ギニア":["牛乳"],
+  "キューバ":["キューピー"],
+  "ギリシャ":["ギリギリ"],
+  "キリバス":["キリン"],
+  "クウェート":["クエン酸"],
+  "クロアチア":["クロワッサン"],
+  "ケニア":["ケチャップ"],
+  "コスタリカ":["コースター"],
+  "コロンビア":["コロッケ"],
+  "サウジアラビア":["サウナ"],
+  "シンガポール":["シンガー"],
+  "ジンバブエ":["ジンベエザメ"],
+  "スイス":["スイカ"],
+  "スウェーデン":["水泳"],
+  "スペイン":["スペアリブ"],
+  "スリランカ":["スリッパ"],
+  "タイ":["たい焼き"],
+  "台湾":["体温計"],
+  "タンザニア":["タンバリン"],
+  "チェコ":["チェス"],
+  "中国":["チューリップ"],
+  "チリ":["ちりとり"],
+  "デンマーク":["電卓"],
+  "ドイツ":["ドーナツ"],
+  "トルコ":["トルティーヤ"],
+  "ナイジェリア":["ナイフ"],
+  "ナミビア":["波"],
+  "ニュージーランド":["入場券"],
+  "ネパール":["ネクタイ"],
+  "ノルウェー":["のり巻き"],
+  "パキスタン":["パキラ"],
+  "パナマ":["パナップ"],
+  "パラグアイ":["パラソル"],
+  "ハンガリー":["ハンバーグ"],
+  "バングラデシュ":["バンブーダンス"],
+  "フィジー":["フィギュア"],
+  "フィリピン":["フィルム"],
+  "フィンランド":["フィンガーボード"],
+  "ブータン":["ブーメラン"],
+  "ブラジル":["ブラシ"],
+  "フランス":["フラフープ"],
+  "ブルガリア":["ブルドーザー"],
+  "ブルネイ":["ブルーベリー"],
+  "ベトナム":["ベトベト"],
+  "ベネズエラ":["ベネチアンマスク"],
+  "ベルギー":["ベル"],
+  "ペルー":["ペンギン"],
+  "ポーランド":["ポーラーベア"],
+  "ポルトガル":["ポルターガイスト"],
+  "マレーシア":["マラカス"],
+  "南アフリカ共和国":["南アルプス"],
+  "ミャンマー":["ミャンミャンゼミ"],
+  "メキシコ":["メキシカンハット"],
+  "モナコ":["モナカ"],
+  "モルディブ":["モルモット"],
+  "モンゴル":["モンブラン"],
+  "ラオス":["ラーメン"],
+  "ルーマニア":["ルービックキューブ"],
+  "ルクセンブルク":["リュックサック"],
+  "レソト":["レモン","セントバーナード"],
+  "ロシア":["ロボット"]
+};
+
+const GROUPS = COUNTRY_NAMES.map(name => ({
+  name,
+  fakes: SPECIAL_FAKES[name] || []
+}));
+const STORAGE = {
+  taken: "kokkiKarutaTakenV3",
+  custom: "kokkiKarutaCustomWordsV3",
+  voice: "kokkiKarutaVoiceSettingsV3",
+  presetDeleted: "kokkiKarutaPresetDeletedV4"
+};
+const MAX_CUSTOM = 200;
+const MAX_WORD_LEN = 40;
+
+let queue = [];
+let current = null;
+let autoTimer = null;
+let voices = [];
+let voiceLoadGeneration = 0;
+
+const $ = id => document.getElementById(id);
+
+function safeParse(raw, fallback) {
+  try { return raw ? JSON.parse(raw) : fallback; }
+  catch { return fallback; }
+}
+
+function loadTaken() {
+  const saved = safeParse(localStorage.getItem(STORAGE.taken), {});
+  GROUPS.forEach(g => g.taken = !!saved[g.name]);
+}
+
+function saveTaken() {
+  const map = Object.fromEntries(GROUPS.map(g => [g.name, !!g.taken]));
+  localStorage.setItem(STORAGE.taken, JSON.stringify(map));
+}
+
+function loadCustom() {
+  const arr = safeParse(localStorage.getItem(STORAGE.custom), []);
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter(x => x && typeof x.text === "string")
+    .slice(0, MAX_CUSTOM)
+    .map((x, i) => ({
+      id: typeof x.id === "string" ? x.id : "c_" + Date.now() + "_" + i,
+      text: x.text.slice(0, MAX_WORD_LEN),
+      taken: !!x.taken
+    }));
+}
+
+let customWords = loadCustom();
+
+function saveCustom() {
+  localStorage.setItem(STORAGE.custom, JSON.stringify(customWords));
+}
+
+function defaultVoiceSettings() {
+  return {
+    selectedVoice: "",
+    localOnly: true,
+    mode: "normal",
+    pitch: 1.00,
+    rate: 1.00,
+    volume: 1.00,
+    interval: 5000
+  };
+}
+
+let voiceSettings = Object.assign(defaultVoiceSettings(),
+  safeParse(localStorage.getItem(STORAGE.voice), {})
+);
+
+function saveVoiceSettings() {
+  localStorage.setItem(STORAGE.voice, JSON.stringify(voiceSettings));
+}
+
+
+function presetId(kind, group, text) {
+  return kind + "::" + group + "::" + text;
+}
+
+function presetItems() {
+  const items = [];
+  GROUPS.forEach(g => {
+    items.push({
+      id: presetId("country", g.name, g.name),
+      kind: "country",
+      group: g.name,
+      text: g.name,
+      label: "国名"
+    });
+
+    g.fakes.forEach(f => {
+      items.push({
+        id: presetId("fake", g.name, f),
+        kind: "fake",
+        group: g.name,
+        text: f,
+        label: "にたワード"
+      });
+    });
+  });
+  return items;
+}
+
+let deletedPresetIds = new Set(
+  safeParse(localStorage.getItem(STORAGE.presetDeleted), [])
+    .filter(x => typeof x === "string")
+);
+
+function saveDeletedPresets() {
+  localStorage.setItem(
+    STORAGE.presetDeleted,
+    JSON.stringify([...deletedPresetIds])
+  );
+}
+
+function isPresetDeleted(id) {
+  return deletedPresetIds.has(id);
+}
+
+function allPredefinedTexts() {
+  const set = new Set();
+  GROUPS.forEach(g => {
+    set.add(g.name);
+    g.fakes.forEach(f => set.add(f));
+  });
+  return set;
+}
+
+function activeWords() {
+  const arr = [];
+
+  GROUPS.forEach(g => {
+    if (!g.taken) {
+      const countryId = presetId("country", g.name, g.name);
+      if (isPresetDeleted(countryId)) return;
+
+      arr.push({
+        kind:"country",
+        text:g.name,
+        group:g.name,
+        presetId:countryId
+      });
+
+      g.fakes.forEach(f => {
+        const fakeId = presetId("fake", g.name, f);
+        if (!isPresetDeleted(fakeId)) {
+          arr.push({
+            kind:"fake",
+            text:f,
+            group:g.name,
+            presetId:fakeId
+          });
+        }
+      });
+    }
+  });
+
+  customWords.forEach(w => {
+    if (!w.taken) {
+      arr.push({
+        kind:"custom",
+        text:w.text,
+        customId:w.id
+      });
+    }
+  });
+
+  return arr;
+}
+
+function shuffle(a) {
+  const arr = [...a];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function refreshQueue() {
+  queue = shuffle(activeWords());
+}
+
+function ensureQueue() {
+  if (!queue.length) refreshQueue();
+}
+
+function removeFromQueue(predicate) {
+  queue = queue.filter(x => !predicate(x));
+}
+
+function updateCounts() {
+  $("remainingCountries").textContent =
+    GROUPS.filter(g =>
+      !g.taken &&
+      !isPresetDeleted(presetId("country", g.name, g.name))
+    ).length;
+
+  $("activeCustom").textContent =
+    customWords.filter(w => !w.taken).length;
+
+  $("customCount").textContent = customWords.length;
+  $("remainingWords").textContent = activeWords().length;
+
+  const preset = presetItems();
+  $("presetCount").textContent = preset.length;
+  $("activePresetCount").textContent =
+    preset.filter(item => !isPresetDeleted(item.id)).length;
+}
+
+function setStatus(text) {
+  $("status").textContent = text;
+}
+
+function renderCurrent() {
+  if (!current) {
+    $("currentInfo").textContent = "まだ読んでいません";
+    return;
+  }
+  if (current.kind === "custom") {
+    $("currentInfo").textContent = "いま読んだ：『" + current.text + "』／自分のワード";
+  } else {
+    $("currentInfo").textContent =
+      "いま読んだ：『" + current.text + "』／対応する国旗札：" + current.group;
+  }
+}
+
+function makeButton(text, className, handler) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = text;
+  b.className = className || "";
+  b.addEventListener("click", handler);
+  return b;
+}
+
+function renderCustomList() {
+  const root = $("customList");
+  root.textContent = "";
+  if (!customWords.length) {
+    const e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "まだ自分のワードはありません";
+    root.appendChild(e);
+    return;
+  }
+
+  customWords.forEach(w => {
+    const row = document.createElement("div");
+    row.className = "wordItem" + (w.taken ? " taken" : "");
+
+    const text = document.createElement("div");
+    text.className = "wordText";
+    text.textContent = (w.taken ? "✅ " : "") + w.text;
+
+    const speak = makeButton("🔊 よむ", "smallBtn", () => {
+      speakText(w.text);
+      setStatus("「" + w.text + "」を読んだよ");
+    });
+
+    const toggle = makeButton(w.taken ? "もどす" : "取った", "smallBtn takeBtn", () => {
+      w.taken = !w.taken;
+      saveCustom();
+      removeFromQueue(x => x.kind === "custom" && x.customId === w.id);
+      renderAll();
+    });
+
+    const del = makeButton("削除", "smallBtn deleteBtn", () => {
+      if (!confirm("「" + w.text + "」を削除しますか？")) return;
+      customWords = customWords.filter(x => x.id !== w.id);
+      saveCustom();
+      removeFromQueue(x => x.kind === "custom" && x.customId === w.id);
+      if (current && current.kind === "custom" && current.customId === w.id) {
+        current = null;
+        renderCurrent();
+      }
+      renderAll();
+    });
+
+    row.append(text, speak, toggle, del);
+    root.appendChild(row);
+  });
+}
+
+
+function renderPresetList() {
+  const root = $("presetWordList");
+  root.textContent = "";
+
+  presetItems().forEach(item => {
+    const deleted = isPresetDeleted(item.id);
+
+    const row = document.createElement("div");
+    row.className = "presetWordItem" + (deleted ? " deleted" : "");
+
+    const main = document.createElement("div");
+    main.className = "presetWordMain";
+
+    const word = document.createElement("div");
+    word.className = "presetWordText";
+    word.textContent = (deleted ? "🚫 " : "") + item.text;
+
+    const meta = document.createElement("div");
+    meta.className = "presetWordMeta";
+    meta.textContent = item.label + " ／ 対応する国旗札：" + item.group;
+
+    main.append(word, meta);
+
+    const speakButton = makeButton(
+      "🔊 よむ",
+      "smallBtn",
+      () => {
+        speakText(item.text);
+        setStatus("「" + item.text + "」を読んだよ");
+      }
+    );
+
+    const button = makeButton(
+      deleted ? "もどす" : "削除",
+      deleted ? "presetRestoreBtn" : "presetDeleteBtn",
+      () => {
+        if (deleted) {
+          deletedPresetIds.delete(item.id);
+          saveDeletedPresets();
+          refreshQueue();
+          renderAll();
+          setStatus("「" + item.text + "」をもどしたよ");
+          return;
+        }
+
+        if (!confirm(
+          "「" + item.text + "」を読み上げリストから削除しますか？"
+        )) return;
+
+        deletedPresetIds.add(item.id);
+        saveDeletedPresets();
+        removeFromQueue(x => item.kind === "country"
+          ? x.group === item.group
+          : x.presetId === item.id
+        );
+
+        if (current && (item.kind === "country"
+          ? current.group === item.group
+          : current.presetId === item.id
+        )) {
+          speechSynthesis.cancel();
+          current = null;
+          renderCurrent();
+        }
+
+        renderAll();
+        setStatus("「" + item.text + "」をプリセットから削除したよ");
+      }
+    );
+
+    const actions = document.createElement("div");
+    actions.style.display = "flex";
+    actions.style.gap = "6px";
+    actions.style.flexWrap = "wrap";
+    actions.append(speakButton, button);
+
+    row.append(main, actions);
+    root.appendChild(row);
+  });
+}
+
+function renderCountries() {
+  const root = $("countryGrid");
+  root.textContent = "";
+  GROUPS.forEach(g => {
+    if (isPresetDeleted(presetId("country", g.name, g.name))) return;
+
+    const card = document.createElement("div");
+    card.className = "countryCard" + (g.taken ? " taken" : "");
+
+    const name = document.createElement("div");
+    name.className = "countryName";
+    name.textContent = (g.taken ? "✅ " : "") + g.name;
+
+    const fake = document.createElement("div");
+    fake.className = "fakeList";
+    const visibleFakes = g.fakes.filter(f =>
+      !isPresetDeleted(presetId("fake", g.name, f))
+    );
+
+    fake.textContent =
+      "にたワード：" +
+      (visibleFakes.length ? visibleFakes.join(" / ") : "なし");
+
+    const btn = makeButton(g.taken ? "もどす" : "取った", "", () => {
+      g.taken = !g.taken;
+      saveTaken();
+      removeFromQueue(x => (x.kind === "country" || x.kind === "fake") && x.group === g.name);
+      renderAll();
+    });
+
+    card.append(name, fake, btn);
+    root.appendChild(card);
+  });
+}
+
+function renderAll() {
+  updateCounts();
+  renderCustomList();
+  renderPresetList();
+  renderCountries();
+}
+
+function normalizeAddedWords(raw) {
+  return raw
+    .split(/[\n\r、,，]+/)
+    .map(s => s.trim().replace(/\s+/g, " "))
+    .filter(Boolean);
+}
+
+function addWords() {
+  const raw = $("wordInput").value;
+  const words = normalizeAddedWords(raw);
+  if (!words.length) {
+    setStatus("ワードを入力してね");
+    return;
+  }
+
+  const predefined = allPredefinedTexts();
+  const existing = new Set(customWords.map(w => w.text));
+  let added = 0, skipped = 0;
+
+  for (const original of words) {
+    if (customWords.length >= MAX_CUSTOM) break;
+    const word = [...original].slice(0, MAX_WORD_LEN).join("");
+    if (!word || existing.has(word) || predefined.has(word)) {
+      skipped++;
+      continue;
+    }
+    customWords.push({
+      id: "c_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8),
+      text: word,
+      taken: false
+    });
+    existing.add(word);
+    added++;
+  }
+
+  saveCustom();
+  $("wordInput").value = "";
+  refreshQueue();
+  renderAll();
+
+  if (added && skipped) setStatus(added + "個追加したよ！ 重複は" + skipped + "個とばしたよ");
+  else if (added) setStatus(added + "個追加したよ！");
+  else setStatus("同じワードがあるか、追加上限です");
+}
+
+function selectedVoiceObject() {
+  const key = voiceSettings.selectedVoice;
+  if (!key) return null;
+  return voices.find(v => voiceKey(v) === key) || null;
+}
+
+function voiceKey(v) {
+  return [v.name, v.lang, String(!!v.localService)].join("|||");
+}
+
+function filteredVoices() {
+  let list = [...voices];
+  if (voiceSettings.localOnly) list = list.filter(v => v.localService === true);
+  return list.sort((a,b) => {
+    const aja = /^ja(-|_)/i.test(a.lang) || /^ja$/i.test(a.lang);
+    const bja = /^ja(-|_)/i.test(b.lang) || /^ja$/i.test(b.lang);
+    if (aja !== bja) return aja ? -1 : 1;
+    return (a.lang + a.name).localeCompare(b.lang + b.name, "ja");
+  });
+}
+
+function loadVoices() {
+  const generation = ++voiceLoadGeneration;
+  voices = speechSynthesis.getVoices() || [];
+  renderVoiceSelect();
+
+  if (!voices.length) {
+    $("voiceStatus").textContent = "音声一覧を取得中です…";
+    setTimeout(() => {
+      if (generation !== voiceLoadGeneration) return;
+      voices = speechSynthesis.getVoices() || [];
+      renderVoiceSelect();
+    }, 250);
+    setTimeout(() => {
+      if (generation !== voiceLoadGeneration) return;
+      voices = speechSynthesis.getVoices() || [];
+      renderVoiceSelect();
+    }, 1000);
+  }
+}
+
+function renderVoiceSelect() {
+  const sel = $("voiceSelect");
+  const list = filteredVoices();
+  sel.textContent = "";
+
+  const def = document.createElement("option");
+  def.value = "";
+  def.textContent = "Chrome / Android の標準TTS";
+  sel.appendChild(def);
+
+  list.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = voiceKey(v);
+    const jp = /^ja(-|_)/i.test(v.lang) || /^ja$/i.test(v.lang);
+    opt.textContent = (jp ? "🇯🇵 " : "") + v.name + " — " + v.lang +
+      (v.localService ? "（端末内）" : "（オンラインの可能性）");
+    sel.appendChild(opt);
+  });
+
+  if ([...sel.options].some(o => o.value === voiceSettings.selectedVoice)) {
+    sel.value = voiceSettings.selectedVoice;
+  } else {
+    sel.value = "";
+    voiceSettings.selectedVoice = "";
+    saveVoiceSettings();
+  }
+
+  if (!list.length && voiceSettings.localOnly) {
+    $("voiceStatus").textContent =
+      "端末内音声が見つかりません。標準TTSは使えます。必要なら「端末内の音声だけ」をOFFにすると候補が増える場合があります。";
+  } else {
+    const localCount = voices.filter(v => v.localService === true).length;
+    $("voiceStatus").textContent =
+      "取得した音声：" + voices.length + "種類／端末内：" + localCount +
+      "種類。日本語音声を上に表示しています。";
+  }
+}
+
+function syncVoiceUI() {
+  $("localOnly").checked = !!voiceSettings.localOnly;
+  $("pitch").value = voiceSettings.pitch;
+  $("rate").value = voiceSettings.rate;
+  $("volume").value = voiceSettings.volume;
+  $("intervalSelect").value = String(voiceSettings.interval);
+  $("pitchValue").textContent = Number(voiceSettings.pitch).toFixed(2);
+  $("rateValue").textContent = Number(voiceSettings.rate).toFixed(2);
+  $("volumeValue").textContent = Number(voiceSettings.volume).toFixed(2);
+}
+
+function applyPreset(name) {
+  voiceSettings.mode = name;
+  if (name === "low") {
+    voiceSettings.pitch = 0.75; voiceSettings.rate = 0.95;
+  } else if (name === "normal") {
+    voiceSettings.pitch = 1.00; voiceSettings.rate = 1.00;
+  } else if (name === "high") {
+    voiceSettings.pitch = 1.35; voiceSettings.rate = 1.02;
+}
+  saveVoiceSettings();
+  syncVoiceUI();
+  speakText("国旗カルタ、はじめるよ！");
+}
+
+function buildUtterance(text, pitch, rate) {
+  const u = new SpeechSynthesisUtterance(text);
+  const v = selectedVoiceObject();
+  if (v) u.voice = v;
+  u.lang = v ? v.lang : "ja-JP";
+  u.pitch = pitch;
+  u.rate = rate;
+  u.volume = Number(voiceSettings.volume);
+  return u;
+}
+
+let speakGeneration = 0;
+
+function speakText(text) {
+  speechSynthesis.cancel();
+  ++speakGeneration;
+
+  const u = buildUtterance(
+    text,
+    Number(voiceSettings.pitch),
+    Number(voiceSettings.rate)
+  );
+  speechSynthesis.speak(u);
+}
+
+function nextRead() {
+  const active = activeWords();
+  if (!active.length) {
+    current = null;
+    renderCurrent();
+
+    const anythingUntaken =
+      GROUPS.some(g => !g.taken) ||
+      customWords.some(w => !w.taken);
+
+    setStatus(
+      anythingUntaken
+        ? "読み上げできるワードがないよ。削除したワードをもどしてね"
+        : "ぜんぶ取ったよ！ 🎉"
+    );
+
+    stopAuto();
+    return;
+  }
+
+  ensureQueue();
+  current = queue.shift() || null;
+  if (!current) return;
+  renderCurrent();
+  setStatus("🔊 よみあげ中…");
+  speakText(current.text);
+  setTimeout(() => {
+    if (current) setStatus("札をさがしてね！");
+  }, 650);
+}
+
+function takeCurrent() {
+  if (!current) {
+    setStatus("まだワードを読んでいないよ");
+    return;
+  }
+
+  if (current.kind === "custom") {
+    const w = customWords.find(x => x.id === current.customId);
+    if (w) {
+      w.taken = true;
+      saveCustom();
+      removeFromQueue(x => x.kind === "custom" && x.customId === w.id);
+      setStatus("✅ 「" + w.text + "」を取った！");
+    }
+  } else {
+    const g = GROUPS.find(x => x.name === current.group);
+    if (g) {
+      g.taken = true;
+      saveTaken();
+      removeFromQueue(x =>
+        (x.kind === "country" || x.kind === "fake") && x.group === g.name
+      );
+      setStatus("✅ 「" + g.name + "」を取った！ にたワードも止めたよ");
+    }
+  }
+  renderAll();
+}
+
+function skipCurrent() {
+  if (!current) return;
+  setStatus("⏭ 「" + current.text + "」をとばした");
+  current = null;
+  renderCurrent();
+}
+
+function startAuto() {
+  stopAuto();
+  nextRead();
+  autoTimer = setInterval(() => {
+    speechSynthesis.cancel();
+    nextRead();
+  }, Number(voiceSettings.interval));
+  $("autoBtn").textContent = "▶ 自動よみあげ中";
+}
+
+function stopAuto() {
+  if (autoTimer) {
+    clearInterval(autoTimer);
+    autoTimer = null;
+  }
+  ++speakGeneration;
+  speechSynthesis.cancel();
+  $("autoBtn").textContent = "▶ 自動よみあげ";
+}
+
+function resetTaken() {
+  GROUPS.forEach(g => g.taken = false);
+  customWords.forEach(w => w.taken = false);
+  saveTaken();
+  saveCustom();
+  current = null;
+  refreshQueue();
+  stopAuto();
+  renderCurrent();
+  renderAll();
+  setStatus("取った札をぜんぶもどしたよ！");
+}
+
+$("addWordBtn").addEventListener("click", addWords);
+$("wordInput").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    addWords();
+  }
+});
+
+$("clearCustomBtn").addEventListener("click", () => {
+  if (!customWords.length) return;
+  if (!confirm("自分で追加したワードを全部削除しますか？")) return;
+  customWords = [];
+  saveCustom();
+  queue = queue.filter(x => x.kind !== "custom");
+  if (current && current.kind === "custom") {
+    current = null;
+    renderCurrent();
+  }
+  renderAll();
+  setStatus("自分のワードを全部削除したよ");
+});
+
+
+$("restorePresetBtn").addEventListener("click", () => {
+  if (!deletedPresetIds.size) {
+    setStatus("削除したプリセットワードはないよ");
+    return;
+  }
+
+  if (!confirm(
+    "削除したプリセットワードを全部もどしますか？"
+  )) return;
+
+  deletedPresetIds.clear();
+  saveDeletedPresets();
+  refreshQueue();
+  renderAll();
+  setStatus("削除したプリセットワードを全部もどしたよ！");
+});
+
+$("deleteAllPresetBtn").addEventListener("click", () => {
+  const allIds = presetItems().map(item => item.id);
+  if (allIds.every(id => deletedPresetIds.has(id))) {
+    setStatus("プリセットはすでに全部消えているよ");
+    return;
+  }
+
+  if (!confirm(
+    "国名と、にたワードのプリセットを全部消しますか？\nあとで「全部もどす」で復元できます。"
+  )) return;
+
+  allIds.forEach(id => deletedPresetIds.add(id));
+  saveDeletedPresets();
+  queue = queue.filter(x => x.kind === "custom");
+  if (current && current.kind !== "custom") {
+    speechSynthesis.cancel();
+    current = null;
+    renderCurrent();
+  }
+  renderAll();
+  setStatus("プリセットを全部消したよ。自分のワードは残っているよ");
+});
+
+$("speakNext").addEventListener("click", nextRead);
+$("takeCurrent").addEventListener("click", takeCurrent);
+$("skipCurrent").addEventListener("click", skipCurrent);
+$("autoBtn").addEventListener("click", startAuto);
+$("stopBtn").addEventListener("click", stopAuto);
+$("resetBtn").addEventListener("click", resetTaken);
+
+$("localOnly").addEventListener("change", e => {
+  voiceSettings.localOnly = e.target.checked;
+  saveVoiceSettings();
+  renderVoiceSelect();
+});
+
+$("voiceSelect").addEventListener("change", e => {
+  voiceSettings.selectedVoice = e.target.value;
+  saveVoiceSettings();
+});
+
+["pitch","rate","volume"].forEach(id => {
+  $(id).addEventListener("input", e => {
+    voiceSettings[id] = Number(e.target.value);
+    voiceSettings.mode = "custom";
+    $(id + "Value").textContent = Number(e.target.value).toFixed(2);
+    saveVoiceSettings();
+  });
+});
+
+$("intervalSelect").addEventListener("change", e => {
+  voiceSettings.interval = Number(e.target.value);
+  saveVoiceSettings();
+  if (autoTimer) startAuto();
+});
+
+document.querySelectorAll("[data-preset]").forEach(btn => {
+  btn.addEventListener("click", () => applyPreset(btn.dataset.preset));
+});
+
+$("voiceTest").addEventListener("click", () => speakText("国旗カルタ、はじめるよ！"));
+$("reloadVoices").addEventListener("click", loadVoices);
+
+if ("onvoiceschanged" in speechSynthesis) {
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+loadTaken();
+syncVoiceUI();
+renderAll();
+refreshQueue();
+loadVoices();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch(() => {
+      setStatus("オフライン準備ができませんでした。オンラインでは使えます");
+    });
+  });
+}
+</script>
+</body>
+</html>
