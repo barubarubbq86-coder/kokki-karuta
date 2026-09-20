@@ -1,6 +1,6 @@
 "use strict";
 
-const CACHE_NAME = "kokki-karuta-v1";
+const CACHE_NAME = "kokki-karuta-v4";
 const APP_FILES = [
   "./",
   "./index.html",
