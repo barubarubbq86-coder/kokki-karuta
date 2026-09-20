@@ -189,7 +189,7 @@ details[open] summary::after{content:" ▲"}
       <textarea id="wordInput" maxlength="4000" autocomplete="off" placeholder="例：りんご, バナナ, みかん"></textarea>
       <button id="addWordBtn">まとめて追加</button>
     </div>
-    <div id="bulkHint" class="helper">半角コンマ「,」で区切って入力すると、全部まとめて読み札になります。全角コンマ「，」・読点「、」・改行でも区切れます。1語40文字まで、最大200語です。</div>
+    <div id="bulkHint" class="helper">国名をコンマ「,」で区切って入力すると、それぞれの国名と関連するひっかけワードが全部読み札になります。国名以外は自分の読み札として追加されます。全角コンマ「，」・読点「、」・改行でも区切れます。</div>
 
     <div class="listTop">
       <strong>ワードリスト（<span id="customCount">0</span>）</strong>
@@ -397,6 +397,11 @@ const GROUPS = COUNTRY_NAMES.map(name => ({
   name,
   fakes: SPECIAL_FAKES[name] || []
 }));
+const COUNTRY_ALIASES = {
+  "アメリカ":"アメリカ合衆国",
+  "米国":"アメリカ合衆国",
+  "UAE":"アラブ首長国連邦"
+};
 const STORAGE = {
   taken: "kokkiKarutaTakenV3",
   custom: "kokkiKarutaCustomWordsV3",
@@ -847,11 +852,31 @@ function addWords() {
 
   const predefined = allPredefinedTexts();
   const existing = new Set(customWords.map(w => w.text));
-  let added = 0, skipped = 0;
+  const countryNames = new Set(COUNTRY_NAMES);
+  const processedCountries = new Set();
+  let added = 0, skipped = 0, countriesAdded = 0;
 
   for (const original of words) {
-    if (customWords.length >= MAX_CUSTOM) break;
     const word = [...original].slice(0, MAX_WORD_LEN).join("");
+    const countryName = COUNTRY_ALIASES[word] || word;
+
+    if (countryNames.has(countryName)) {
+      if (processedCountries.has(countryName)) {
+        skipped++;
+        continue;
+      }
+      processedCountries.add(countryName);
+      const group = GROUPS.find(g => g.name === countryName);
+      group.taken = false;
+      presetIdsForGroup(countryName).forEach(id => deletedPresetIds.delete(id));
+      countriesAdded++;
+      continue;
+    }
+
+    if (customWords.length >= MAX_CUSTOM) {
+      skipped++;
+      continue;
+    }
     if (!word || existing.has(word) || predefined.has(word)) {
       skipped++;
       continue;
@@ -866,11 +891,15 @@ function addWords() {
   }
 
   saveCustom();
+  saveTaken();
+  saveDeletedPresets();
   $("wordInput").value = "";
   refreshQueue();
   renderAll();
 
-  if (added && skipped) setStatus(added + "個追加したよ！ 重複は" + skipped + "個とばしたよ");
+  if (countriesAdded && added) setStatus(countriesAdded + "か国を関連ワードごと追加して、ほかの読み札も" + added + "個追加したよ！");
+  else if (countriesAdded) setStatus(countriesAdded + "か国と関連するひっかけワードを読み札にしたよ！");
+  else if (added && skipped) setStatus(added + "個追加したよ！ 重複などは" + skipped + "個とばしたよ");
   else if (added) setStatus(added + "個追加したよ！");
   else setStatus("同じワードがあるか、追加上限です");
 }
